@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1D Barcode Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fef9f5;
+      padding: 40px;
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      justify-content: center;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+
+    h2 {
+      color: #222;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .checkbox {
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #ff4040;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e52e2e;
+    }
+
+    #barcode-preview {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    canvas {
+      margin-top: 10px;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Generate Barcode</h2>
+
+    <label for="barcodeType">Barcode Type *</label>
+    <select id="barcodeType">
+      <option value="EAN13">EAN-13</option>
+      <option value="EAN8">EAN-8</option>
+      <option value="UPC">UPC-A</option>
+      <option value="UPCE">UPC-E</option>
+      <option value="CODE39">Code-39</option>
+      <option value="CODE128">Code-128</option>
+      <option value="ITF14">ITF-14</option>
+      <option value="ITF">Interleaved 2 of 5</option>
+      <option value="CODABAR">Codabar</option>
+      <option value="MSI">MSI</option>
+    </select>
+
+    <label for="barcodeData">Barcode Data *</label>
+    <input type="text" id="barcodeData" placeholder="Enter barcode value" />
+
+    <div class="checkbox">
+      <input type="checkbox" id="showLabel" checked />
+      <label for="showLabel">Show barcode data label</label>
+    </div>
+
+    <label for="itemName">Item Name (optional)</label>
+    <input type="text" id="itemName" placeholder="Enter item name"/>
+
+    <button onclick="generateBarcode()">Generate Barcode</button>
+  </div>
+
+  <div class="container">
+    <h2>Barcode Preview</h2>
+    <div id="barcode-preview">
+      <svg id="barcode"></svg>
+      <div id="item-title" style="margin-top: 10px; font-weight: bold;"></div>
+    </div>
+    <button onclick="downloadBarcode()">⬇ Download Barcode</button>
+  </div>
+
+  <script>
+    function generateBarcode() {
+      const type = document.getElementById('barcodeType').value;
+      const data = document.getElementById('barcodeData').value.trim();
+      const showLabel = document.getElementById('showLabel').checked;
+      const itemName = document.getElementById('itemName').value.trim();
+
+      if (!data) {
+        alert("Please enter barcode data.");
+        return;
+      }
+
+      JsBarcode("#barcode", data, {
+        format: type,
+        displayValue: showLabel,
+        lineColor: "#000",
+        width: 2,
+        height: 80,
+        margin: 10,
+        fontSize: 16,
+      });
+
+      document.getElementById("item-title").innerText = itemName || '';
+    }
+
+    function downloadBarcode() {
+      const svg = document.getElementById("barcode");
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const img = new Image();
+      const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function () {
+        canvas.width = img.width;
+        canvas.height = img.height + 30; // leave space for item title
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        // Add item title
+        const itemTitle = document.getElementById("itemName").value;
+        if (itemTitle) {
+          ctx.font = "16px Arial";
+          ctx.fillStyle = "#000000";
+          ctx.textAlign = "center";
+          ctx.fillText(itemTitle, canvas.width / 2, canvas.height - 10);
+        }
+
+        const pngUrl = canvas.toDataURL("image/png");
+
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = "barcode.png";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    }
+  </script>
+</body>
+</html>
